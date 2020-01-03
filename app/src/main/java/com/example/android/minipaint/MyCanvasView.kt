@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import androidx.core.content.res.ResourcesCompat
 
 private const val STROKE_WIDTH = 12f // has to be float
@@ -43,6 +44,8 @@ class MyCanvasView(context:Context): View(context){
     private var currentX = 0f
     private var currentY = 0f
 
+    private val touchTolerance = ViewConfiguration.get(context).scaledTouchSlop
+
     /** This method is called when user touches the screen  **/
     private fun touchStart() {
         path.reset()
@@ -51,7 +54,24 @@ class MyCanvasView(context:Context): View(context){
         currentY = motionTouchEventY
     }
 
-    private fun touchMove() {}
+    /**This method is called when user moves touch points on the screen */
+    private fun touchMove() {
+        //calculate the traveled distance
+        val dx = Math.abs(motionTouchEventX - currentX)
+        val dy = Math.abs(motionTouchEventY - currentY)
+
+        //Crates a curve between the two points if movement is further than touch tolerance
+        if (dx >= touchTolerance || dy >= touchTolerance) {
+            // QuadTo() adds a quadratic bezier from the last point,
+            // approaching control point (x1,y1), and ending at (x2,y2).
+            path.quadTo(currentX, currentY, (motionTouchEventX + currentX) / 2, (motionTouchEventY + currentY) / 2)
+            currentX = motionTouchEventX
+            currentY = motionTouchEventY
+            // Draw the path in the extra bitmap to cache it.
+            extraCanvas.drawPath(path, paint)
+        }
+        invalidate()
+    }
 
     private fun touchUp() {}
 
